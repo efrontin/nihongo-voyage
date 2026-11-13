@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Grade } from '../core/models';
 import { SpeechService } from '../core/speech.service';
@@ -77,6 +77,7 @@ import { THEMES } from '../data/vocab';
       </section>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .progress { margin-bottom: 10px; }
     .card {

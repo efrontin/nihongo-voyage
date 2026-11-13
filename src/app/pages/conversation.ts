@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -148,6 +148,7 @@ const SpeechRecognitionCtor: (new () => Recognition) | undefined =
       </section>
     </ng-template>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .info { background: #e6ebf3; color: var(--indigo); padding: 10px 12px; border-radius: 10px; }
     .ok { color: var(--matcha); }
