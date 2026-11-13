@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../core/store.service';
 import { THEMES } from '../data/vocab';
@@ -49,6 +49,7 @@ import { THEMES } from '../data/vocab';
       }
     </ul>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .hero { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
     .hero h1 { margin: 0; }

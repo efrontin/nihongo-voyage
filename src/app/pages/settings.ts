@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { dailyReminderIcs, download, toAnkiTsv } from '../core/export';
 import { Settings } from '../core/models';
@@ -53,6 +53,7 @@ import { THEMES } from '../data/vocab';
     </div>
     @if (message()) { <p class="small msg">{{ message() }}</p> }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     input[type=range] { padding: 0; }
     .check { display: flex; align-items: center; gap: 8px; color: var(--ink); margin-top: 16px; }

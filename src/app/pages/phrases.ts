@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { EntryType, ThemeId, VocabEntry } from '../core/models';
 import { SpeechService } from '../core/speech.service';
@@ -80,6 +80,7 @@ import { THEMES } from '../data/vocab';
       </div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .filters { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
     .filters button { white-space: nowrap; padding: 6px 12px; border-radius: 999px; font-size: 0.85rem; }
