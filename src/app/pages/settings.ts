@@ -38,10 +38,12 @@ import { THEMES } from '../data/vocab';
     <p class="muted small">Télécharge un événement quotidien (.ics) à ouvrir avec Calendrier ou Google Agenda.</p>
 
     <h2>Conversation (IA)</h2>
+    <form ngNoForm (submit)="$event.preventDefault()">
     <label for="s-key">Clé API Anthropic</label>
     <input id="s-key" type="password" autocomplete="off" placeholder="sk-ant-…" [ngModel]="s().apiKey" (ngModelChange)="set('apiKey', $event.trim())" />
     <label for="s-model">Modèle</label>
     <input id="s-model" [ngModel]="s().model" (ngModelChange)="set('model', $event.trim())" />
+    </form>
     <p class="muted small">Facultatif. Sans clé, l'onglet Parler ouvre la scène dans l'app Claude (gratuit, mode vocal compris). L'API, elle, est facturée à part de tout abonnement Claude. La clé reste stockée sur cet appareil uniquement (localStorage).</p>
 
     <h2>Données</h2>
