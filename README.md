@@ -1,6 +1,6 @@
 # Nihongo Voyage 🇯🇵
 
-PWA Angular 20 pour apprendre le japonais du voyage chaque jour.
+PWA Angular 22 pour apprendre le japonais du voyage chaque jour.
 
 ## Lancer
 
@@ -11,7 +11,13 @@ npm test             # tests (répétition espacée + import des phrases)
 npm run build        # build de production + service worker (dist/nihongo-voyage/browser)
 ```
 
-Pour l'installer sur iPhone : déployer `dist/nihongo-voyage/browser` sur un hébergeur HTTPS (Netlify, Vercel, GitHub Pages…), l'ouvrir dans Safari, puis Partager → « Sur l'écran d'accueil ».
+## Déploiement (GitHub Pages)
+
+L'app est publiée automatiquement sur https://efrontin.github.io/nihongo-voyage/ à chaque push sur `main` (workflow `.github/workflows/deploy.yml` : tests, build, déploiement).
+
+`npm run build:pages` construit la version pour ce sous-dossier (`--base-href /nihongo-voyage/`) et copie `index.html` en `404.html`, pour que le rechargement direct d'une page (ex. `/revision`) ouvre l'app au lieu d'une 404.
+
+Pour l'installer sur iPhone : ouvrir l'adresse ci-dessus dans Safari, puis Partager → « Sur l'écran d'accueil ».
 
 ## Écrans
 

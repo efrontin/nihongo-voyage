@@ -5,6 +5,7 @@
   "scripts": {
     "start": "ng serve",
     "build": "ng build",
+    "build:pages": "ng build --base-href /nihongo-voyage/ && cp dist/nihongo-voyage/browser/index.html dist/nihongo-voyage/browser/404.html",
     "test:srs": "npx tsx src/app/core/srs.spec.ts",
     "test:import": "npx tsx src/app/core/import.spec.ts",
     "test": "npm run test:srs && npm run test:import"
