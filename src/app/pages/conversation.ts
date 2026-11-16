@@ -204,7 +204,7 @@ export class ConversationPage {
   protected readonly imported = signal<number | null>(null);
   protected readonly appPrompt = computed(() => {
     const s = this.scenario();
-    return s ? buildAppPrompt(s) : '';
+    return s ? buildAppPrompt(s, this.store.settings().level) : '';
   });
   protected readonly preview = computed(() => parseCardsFromText(this.pasted()));
 

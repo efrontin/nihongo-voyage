@@ -1,6 +1,6 @@
 // Tests du moteur de répétition espacée : `npm run test:srs`
 import assert from 'node:assert/strict';
-import { DAY, MINUTE, newCard, schedule } from './srs';
+import { DAY, KNOWN_INTERVAL, MINUTE, knownCard, newCard, schedule } from './srs';
 
 const now = new Date(2026, 10, 1, 10, 0).getTime();
 let pass = 0;
@@ -65,6 +65,20 @@ test('la facilité ne descend jamais sous 1.3', () => {
   let c = { ...newCard(now), status: 'review' as const, interval: 10, ease: 1.35 };
   for (let i = 0; i < 5; i++) c = { ...schedule(c, 2, now), status: 'review' };
   assert.ok(c.ease >= 1.3);
+});
+
+test('carte écartée au tri → en révision à 21 jours, puis suit le calendrier normal', () => {
+  const c = knownCard(now);
+  assert.equal(c.status, 'review');
+  assert.equal(c.interval, KNOWN_INTERVAL);
+  assert.ok(c.due > now + 20 * DAY && c.due <= now + 21 * DAY);
+  const ok = schedule(c, 3, c.due);
+  assert.equal(ok.status, 'review');
+  assert.ok(ok.interval > KNOWN_INTERVAL);
+  // si elle était en fait oubliée, « À revoir » la renvoie en réapprentissage
+  const ko = schedule(c, 1, c.due);
+  assert.equal(ko.status, 'relearning');
+  assert.equal(ko.lapses, 1);
 });
 
 console.log(`\n${pass} tests OK`);

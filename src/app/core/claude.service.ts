@@ -11,7 +11,7 @@ export class ClaudeService {
   private readonly store = inject(StoreService);
 
   async reply(scenario: Scenario, history: ChatMessage[]): Promise<TutorReply> {
-    const { apiKey, model } = this.store.settings();
+    const { apiKey, model, level } = this.store.settings();
     if (!apiKey) throw new Error('Ajoute ta clé API Anthropic dans les réglages.');
 
     const messages: ChatMessage[] = history.length
@@ -27,7 +27,7 @@ export class ClaudeService {
         // la clé reste sur ton appareil ; cet en-tête autorise l'appel direct depuis le navigateur
         'anthropic-dangerous-direct-browser-access': 'true',
       },
-      body: JSON.stringify({ model, max_tokens: 700, system: apiSystemPrompt(scenario), messages }),
+      body: JSON.stringify({ model, max_tokens: 700, system: apiSystemPrompt(scenario, level), messages }),
     });
 
     if (!res.ok) {

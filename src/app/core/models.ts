@@ -11,6 +11,8 @@ export type ThemeId =
   | 'nombres'
   | 'urgences'
   | 'panneaux'
+  | 'entendre'
+  | 'questions'
   | 'perso';
 
 export type EntryType = 'mot' | 'verbe' | 'phrase' | 'kanji';
@@ -28,6 +30,8 @@ export interface VocabEntry {
   type: EntryType;
   priority: Priority;
   note?: string;
+  /** Phrase dite par l'interlocuteur : compréhension à l'oreille seulement, pas de carte « dire ». */
+  heard?: boolean;
 }
 
 /** rec = japonais → français (comprendre), prod = français → japonais (parler) */
@@ -59,6 +63,9 @@ export interface DayLog {
   newCards: number;
 }
 
+/** Niveau visé dans les jeux de rôle (CECR / JF Standard). */
+export type Level = 'A1' | 'A2' | 'B1';
+
 export interface Settings {
   newPerDay: number;
   focusTheme: ThemeId | 'all';
@@ -68,6 +75,9 @@ export interface Settings {
   apiKey: string;
   model: string;
   reminderTime: string; // HH:MM
+  /** Carte « comprendre » : l'audio d'abord, le texte japonais reste caché. */
+  listenFirst: boolean;
+  level: Level;
 }
 
 export interface ChatMessage {

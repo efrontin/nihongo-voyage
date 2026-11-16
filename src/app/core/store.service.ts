@@ -1,7 +1,8 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import { BUILTIN_VOCAB } from '../data/vocab';
+import { hasProd } from './cards';
 import { CardDirection, CardState, DayLog, Grade, Settings, VocabEntry } from './models';
-import { newCard, schedule } from './srs';
+import { KNOWN_INTERVAL, knownCard, newCard, schedule } from './srs';
 
 const STORAGE_KEY = 'nihongo-voyage.v1';
 /** On peut revoir en avance une carte en apprentissage si elle tombe dans les 20 min. */
@@ -23,6 +24,8 @@ export const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   model: 'claude-haiku-5-5',
   reminderTime: '08:00',
+  listenFirst: true,
+  level: 'A2',
 };
 
 function emptyState(): PersistedState {
@@ -132,7 +135,7 @@ export class StoreService {
     const out: string[] = [];
     // sens « parler » débloqués en premier : ils consolident ce qui est déjà vu
     for (const e of pool) {
-      if (e.type === 'kanji') continue;
+      if (!hasProd(e)) continue;
       const rec = cards[cardId(e.id, 'rec')];
       if (rec?.status === 'review' && !cards[cardId(e.id, 'prod')]) out.push(cardId(e.id, 'prod'));
       if (out.length >= limit) return out;
@@ -179,6 +182,37 @@ export class StoreService {
       return { ...s, cards: { ...s.cards, [id]: after }, log: log.slice(-400) };
     });
     return after;
+  }
+
+  /* ---------- Tri rapide ---------- */
+
+  /** Entrées jamais vues, à passer au tri (les phrases « à entendre » sont du contenu neuf : on les exclut). */
+  triageQueue(): VocabEntry[] {
+    const cards = this.cards();
+    return this.entries().filter((e) => !e.heard && !cards[cardId(e.id, 'rec')]);
+  }
+
+  /**
+   * Écarte une entrée déjà connue : la carte part en révision à 21-30 jours (étalées pour ne pas
+   * toutes revenir le même jour). `dirs` : « comprendre » seul, ou aussi « dire ».
+   */
+  markKnown(entryId: string, dirs: CardDirection[], now = Date.now()): void {
+    const index = Math.max(0, this.entries().findIndex((e) => e.id === entryId));
+    const card = knownCard(now, KNOWN_INTERVAL + (index % 10));
+    this.state.update((s) => {
+      const cards = { ...s.cards };
+      for (const d of dirs) cards[cardId(entryId, d)] ??= { ...card };
+      return { ...s, cards };
+    });
+  }
+
+  /** Annule un `markKnown` (bouton « annuler » du tri). */
+  unmarkKnown(entryId: string, dirs: CardDirection[]): void {
+    this.state.update((s) => {
+      const cards = { ...s.cards };
+      for (const d of dirs) delete cards[cardId(entryId, d)];
+      return { ...s, cards };
+    });
   }
 
   /* ---------- Progression ---------- */
