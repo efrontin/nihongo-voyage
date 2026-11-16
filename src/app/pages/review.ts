@@ -76,6 +76,7 @@ import { THEMES } from '../data/vocab';
           @if (moreAvailable()) {
             <button class="btn-primary" (click)="learnMore()">Apprendre 5 mots de plus</button>
           }
+          <a class="btn" routerLink="/nombres">Écouter des prix et des heures</a>
           <a class="btn" routerLink="/conversation">S'entraîner à parler</a>
           <a class="btn" routerLink="/">Accueil</a>
         </div>

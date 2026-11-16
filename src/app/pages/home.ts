@@ -41,6 +41,8 @@ import { THEMES } from '../data/vocab';
       <a class="btn btn-block triage" routerLink="/tri">⚡ Tri rapide : écarter ce que je connais déjà · {{ toSort() }}</a>
     }
 
+    <a class="btn btn-block triage" routerLink="/nombres">🔢 Écoute des nombres : prix, heures, quais</a>
+
     <h2>Progression par thème</h2>
     <ul class="themes">
       @for (t of themes(); track t.id) {
@@ -70,7 +72,7 @@ import { THEMES } from '../data/vocab';
     .stat span { font-size: 0.78rem; color: var(--ink-2); }
     .countdown { background: var(--indigo); color: #fff; border-radius: var(--radius); padding: 10px 14px; margin: 0 0 14px; }
     .center { text-align: center; }
-    .triage { margin-top: 4px; }
+    .triage { margin-top: 8px; }
     .themes { list-style: none; padding: 0; margin: 0; }
     .themes li { display: grid; grid-template-columns: 28px 1fr 90px 48px; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
     .bar { height: 6px; background: var(--paper-2); border-radius: 999px; overflow: hidden; }
