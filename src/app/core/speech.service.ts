@@ -19,14 +19,15 @@ export class SpeechService {
     speechSynthesis.addEventListener('voiceschanged', pick);
   }
 
-  speak(text: string): void {
+  /** `rate` force un débit (1 = vitesse réelle) ; sinon on prend celui des réglages. */
+  speak(text: string, rate?: number): void {
     if (!this.supported) return;
     // « 〜 » et « / » se lisent mal : on les retire
     const clean = text.replace(/[〜~]/g, '').replace(/\s*\/\s*/g, '、');
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(clean);
     u.lang = 'ja-JP';
-    u.rate = this.store.settings().speechRate;
+    u.rate = rate ?? this.store.settings().speechRate;
     if (this.voice) u.voice = this.voice;
     speechSynthesis.speak(u);
   }

@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { listenOnly } from '../core/cards';
 import { Grade } from '../core/models';
 import { SpeechService } from '../core/speech.service';
 import { formatDelay } from '../core/srs';
@@ -21,16 +22,20 @@ import { THEMES } from '../data/vocab';
       <article class="card" [class.prod]="c.dir === 'prod'">
         <div class="meta row">
           <span class="chip">{{ themeLabel(c.entry.theme) }}</span>
-          <span class="chip">{{ c.dir === 'rec' ? '👂 Comprendre' : '🗣️ Dire' }}</span>
+          <span class="chip">{{ c.dir === 'prod' ? '🗣️ Dire' : c.listen ? '👂 Écouter' : '👁 Lire' }}</span>
           @if (c.isNew) { <span class="chip new">Nouveau</span> }
           <span class="spacer"></span>
-          @if (c.dir === 'rec' || revealed()) {
+          @if ((c.dir === 'rec' && c.entry.type !== 'kanji') || revealed()) {
             <button class="icon-btn" (click)="speak()" aria-label="Écouter">🔊</button>
           }
         </div>
 
         <div class="front">
-          @if (c.dir === 'rec') {
+          @if (c.dir === 'rec' && c.listen && !revealed() && !peek()) {
+            <button class="listen" (click)="speak()" aria-label="Réécouter">🔊</button>
+            <p class="muted small">Qu'est-ce que tu entends ? <span class="kbd dark">r</span> pour réécouter</p>
+            <button class="small peek" (click)="peek.set(true)">👁 Voir le texte</button>
+          } @else if (c.dir === 'rec') {
             <p class="jp big">{{ c.entry.jp }}</p>
           } @else {
             <p class="fr-big">{{ c.entry.fr }}</p>
@@ -93,6 +98,12 @@ import { THEMES } from '../data/vocab';
     .front { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 24px 0 8px; }
     .back { border-top: 1px dashed var(--line); padding-top: 14px; }
     .big { font-size: clamp(1.8rem, 8vw, 2.8rem); line-height: 1.25; margin: 0; word-break: keep-all; overflow-wrap: anywhere; }
+    .listen {
+      width: 96px; height: 96px; border-radius: 50%; font-size: 2.4rem; margin: 0 auto 12px;
+      background: var(--indigo); border: none; display: grid; place-items: center;
+    }
+    .peek { margin: 14px auto 0; }
+    .kbd.dark { border-color: var(--line); }
     .fr-big { font-size: 1.4rem; font-weight: 600; margin: 0 0 6px; }
     .kana { font-size: 1.2rem; margin: 6px 0 0; }
     .romaji { color: var(--ink-2); font-style: italic; margin: 4px 0 0; }
@@ -115,6 +126,8 @@ export class ReviewPage implements OnInit {
 
   protected readonly queue = signal<string[]>([]);
   protected readonly revealed = signal(false);
+  /** Texte japonais affiché à la demande sur une carte d'écoute. */
+  protected readonly peek = signal(false);
   protected readonly done = signal(0);
   protected readonly later = signal(0);
   private readonly now = signal(Date.now());
@@ -132,7 +145,8 @@ export class ReviewPage implements OnInit {
     const { entryId, dir } = parseCardId(id);
     const entry = this.store.entryById().get(entryId);
     if (!entry) return null;
-    return { id, dir, entry, isNew: !this.store.cards()[id] };
+    const listen = listenOnly(entry, dir, this.store.settings().listenFirst);
+    return { id, dir, entry, listen, isNew: !this.store.cards()[id] };
   });
 
   protected readonly moreAvailable = computed(() => {
@@ -176,6 +190,7 @@ export class ReviewPage implements OnInit {
     }
     this.queue.set(rest);
     this.revealed.set(false);
+    this.peek.set(false);
     this.autoSpeak();
   }
 
@@ -186,11 +201,16 @@ export class ReviewPage implements OnInit {
 
   protected speak(): void {
     const c = this.current();
-    if (c) this.speech.speak(c.entry.kana || c.entry.jp);
+    // sur un kanji de panneau, l'audio donnerait la réponse avant qu'on ait lu
+    if (c?.entry.type === 'kanji' && !this.revealed()) return;
+    // les phrases dites par l'interlocuteur s'écoutent à vitesse réelle
+    if (c) this.speech.speak(c.entry.kana || c.entry.jp, c.entry.heard ? 1 : undefined);
   }
 
   private autoSpeak(): void {
-    if (this.current()?.dir === 'rec') setTimeout(() => this.speak(), 150);
+    // pas d'audio d'office sur les kanji des panneaux : c'est la lecture qu'on teste
+    const c = this.current();
+    if (c?.dir === 'rec' && c.entry.type !== 'kanji') setTimeout(() => this.speak(), 150);
   }
 
   onKey(e: KeyboardEvent): void {

@@ -1,7 +1,8 @@
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { dailyReminderIcs, download, toAnkiTsv } from '../core/export';
-import { Settings } from '../core/models';
+import { LEVELS } from '../core/claude.prompts';
+import { Level, Settings } from '../core/models';
 import { StoreService } from '../core/store.service';
 import { THEMES } from '../data/vocab';
 
@@ -21,6 +22,9 @@ import { THEMES } from '../data/vocab';
       @for (t of themes; track t.id) { <option [value]="t.id">{{ t.icon }} {{ t.label }}</option> }
     </select>
 
+    <label class="check"><input type="checkbox" [ngModel]="s().listenFirst" (ngModelChange)="set('listenFirst', $event)" /> Écoute d'abord : cacher le texte japonais des cartes « comprendre »</label>
+    <p class="muted small">La carte se joue à l'oreille ; « Voir le texte » reste disponible. Les kanji des panneaux restent des cartes de lecture.</p>
+
     <label class="check"><input type="checkbox" [ngModel]="s().showRomaji" (ngModelChange)="set('showRomaji', $event)" /> Afficher le romaji</label>
 
     <label for="s-rate">Vitesse de la voix : {{ s().speechRate }}×</label>
@@ -38,6 +42,11 @@ import { THEMES } from '../data/vocab';
     <p class="muted small">Télécharge un événement quotidien (.ics) à ouvrir avec Calendrier ou Google Agenda.</p>
 
     <h2>Conversation (IA)</h2>
+    <label for="s-level">Mon niveau dans les jeux de rôle</label>
+    <select id="s-level" [ngModel]="s().level" (ngModelChange)="set('level', $event)">
+      @for (l of levels; track l.id) { <option [value]="l.id">{{ l.label }}</option> }
+    </select>
+    <p class="muted small">Plus le niveau monte, plus l'interlocuteur parle comme en vrai (keigo de service, phrases non simplifiées).</p>
     <form ngNoForm (submit)="$event.preventDefault()">
     <label for="s-key">Clé API Anthropic</label>
     <input id="s-key" type="password" autocomplete="off" placeholder="sk-ant-…" [ngModel]="s().apiKey" (ngModelChange)="set('apiKey', $event.trim())" />
@@ -71,6 +80,7 @@ export class SettingsPage {
   private readonly store = inject(StoreService);
   protected readonly s = this.store.settings;
   protected readonly themes = THEMES;
+  protected readonly levels = (Object.keys(LEVELS) as Level[]).map((id) => ({ id, label: LEVELS[id].label }));
   protected readonly message = signal('');
 
   protected set<K extends keyof Settings>(key: K, value: Settings[K]): void {

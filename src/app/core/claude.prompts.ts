@@ -1,3 +1,5 @@
+import { Level } from './models';
+
 export interface Scenario {
   id: string;
   label: string;
@@ -17,6 +19,25 @@ export const SCENARIOS: Scenario[] = [
   { id: 'libre', label: 'Discussion libre', icon: '💬', role: 'ami japonais rencontré dans un échange linguistique', goal: 'se présenter, parler de ses loisirs (anime, sacs à dos, volley-ball)' },
 ];
 
+/** Ce que chaque niveau change : la présentation de l'apprenant et le registre de l'interlocuteur. */
+export const LEVELS: Record<Level, { label: string; learner: string; speech: string }> = {
+  A1: {
+    label: 'A1 · débutant (JLPT N5)',
+    learner: 'débutant (niveau A1, JLPT N5)',
+    speech: 'phrases courtes et polies (forme です/ます), vocabulaire courant de voyage',
+  },
+  A2: {
+    label: 'A2 · élémentaire (JLPT N4)',
+    learner: 'de niveau élémentaire (A2, JLPT N4)',
+    speech: 'le vrai langage de service (keigo courant : いらっしゃいませ, 少々お待ちください, 〜でよろしいですか…), en phrases de longueur normale ; reformule plus simplement seulement si on te le demande',
+  },
+  B1: {
+    label: 'B1 · intermédiaire (JLPT N3)',
+    learner: 'de niveau intermédiaire (B1, JLPT N3)',
+    speech: 'un japonais naturel, au débit et au registre réels de la situation (keigo de service compris), sans simplifier ; reformule seulement si on te le demande',
+  },
+};
+
 export interface TutorReply {
   jp: string;
   kana: string;
@@ -26,12 +47,13 @@ export interface TutorReply {
   suggestions: { jp: string; romaji: string; fr: string }[];
 }
 
-export function apiSystemPrompt(s: Scenario): string {
-  return `Tu es un partenaire de jeu de rôle pour un Français débutant en japonais (niveau JLPT N5) qui prépare un voyage au Japon.
+export function apiSystemPrompt(s: Scenario, level: Level = 'A2'): string {
+  const l = LEVELS[level];
+  return `Tu es un partenaire de jeu de rôle pour un Français ${l.learner} en japonais, qui prépare un voyage au Japon.
 Rôle : tu joues un(e) ${s.role}. Objectif de la scène : ${s.goal}.
 
 Règles :
-- Tu parles UNIQUEMENT japonais dans le jeu, en phrases courtes, polies (forme です/ます), vocabulaire courant de voyage.
+- Tu parles UNIQUEMENT japonais dans le jeu. Registre : ${l.speech}.
 - Une seule réplique à la fois, comme dans une vraie interaction ; tu commences la scène si l'historique est vide.
 - L'utilisateur peut écrire en japonais, en romaji ou en français s'il est bloqué.
 - Si sa phrase contient une erreur ou s'il a écrit en français/romaji, donne dans "correction" la bonne formulation japonaise avec une explication très brève en français. Sinon null.
@@ -46,14 +68,15 @@ Réponds TOUJOURS et SEULEMENT avec un objet JSON valide, sans texte autour :
  * Prompt à coller dans l'app Claude (texte ou mode vocal) : aucune clé API nécessaire.
  * En fin de scène, Claude renvoie les phrases dans un format que l'onglet Parler sait importer.
  */
-export function buildAppPrompt(s: Scenario): string {
-  return `Jeu de rôle pour pratiquer le japonais avant mon voyage au Japon. Je suis français, débutant (niveau JLPT N5).
+export function buildAppPrompt(s: Scenario, level: Level = 'A2'): string {
+  const l = LEVELS[level];
+  return `Jeu de rôle pour pratiquer le japonais avant mon voyage au Japon. Je suis français, ${l.learner}.
 
 Tu joues : ${s.role}.
 Objectif de la scène : ${s.goal}.
 
 Règles :
-1. Commence la scène tout de suite, en japonais, avec une seule réplique courte et polie (forme です/ます).
+1. Commence la scène tout de suite, en japonais, avec une seule réplique. Registre : ${l.speech}.
 2. Une réplique à la fois, comme dans la vraie vie, puis tu attends ma réponse.
 3. Sous chaque réplique, ajoute la lecture en hiragana et la traduction française entre parenthèses. Si on se parle en mode vocal, n'ajoute rien : je te demanderai « traduis » si je bloque.
 4. Je réponds en japonais, en romaji ou en français si je suis bloqué. Si je fais une erreur, ou si je réponds en français, donne-moi d'abord la bonne phrase japonaise en une ligne, puis continue la scène.

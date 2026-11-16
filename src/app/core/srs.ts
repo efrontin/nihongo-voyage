@@ -25,6 +25,14 @@ export function newCard(now: number): CardState {
   return { status: 'new', due: now, interval: 0, ease: START_EASE, step: 0, reps: 0, lapses: 0 };
 }
 
+/** Intervalle de départ d'une carte écartée au tri rapide (« je connais déjà »). */
+export const KNOWN_INTERVAL = 21; // jours
+
+/** Carte déclarée déjà connue : elle part directement en révision, à échéance lointaine. */
+export function knownCard(now: number, interval = KNOWN_INTERVAL): CardState {
+  return { status: 'review', due: dueInDays(now, interval), interval, ease: START_EASE, step: 0, reps: 0, lapses: 0 };
+}
+
 /** Début du jour local (pour qu'une carte « à demain » soit dispo dès le matin). */
 function startOfDay(ts: number): number {
   const d = new Date(ts);

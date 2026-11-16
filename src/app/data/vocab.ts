@@ -13,11 +13,17 @@ export const THEMES: { id: ThemeId; label: string; icon: string }[] = [
   { id: 'nombres', label: 'Nombres & temps', icon: '🔢' },
   { id: 'urgences', label: 'Urgences', icon: '🚑' },
   { id: 'panneaux', label: 'Kanji des panneaux', icon: '🪧' },
+  { id: 'entendre', label: 'Ce que tu vas entendre', icon: '👂' },
+  { id: 'questions', label: 'Les questions qu\'on te pose', icon: '💬' },
   { id: 'perso', label: 'Mes cartes', icon: '⭐' },
 ];
 
-/** [jp, kana, romaji, français, type, priorité, note?] */
-type Row = [string, string, string, string, EntryType, Priority, string?];
+/** [jp, kana, romaji, français, type, priorité, note?, entendu ?] — « entendu » : dit par l'interlocuteur, à comprendre à l'oreille */
+type Row = [string, string, string, string, EntryType, Priority, string?, boolean?];
+
+/** Raccourci pour une phrase qu'on entend sans avoir à la dire. */
+const heard = (jp: string, kana: string, romaji: string, fr: string, priority: Priority, note?: string): Row =>
+  [jp, kana, romaji, fr, 'phrase', priority, note, true];
 
 // ⚠️ Ajouter les nouvelles lignes EN FIN de liste : l'identifiant d'une carte dépend de sa position.
 const DATA: Record<Exclude<ThemeId, 'perso'>, Row[]> = {
@@ -259,10 +265,82 @@ const DATA: Record<Exclude<ThemeId, 'perso'>, Row[]> = {
     ['大人', 'おとな', 'otona', 'Adulte', 'kanji', 2],
     ['子供', 'こども', 'kodomo', 'Enfant', 'kanji', 3],
   ],
+  entendre: [
+    // Caisse (konbini, boutique)
+    heard('いらっしゃいませ', 'いらっしゃいませ', 'irasshaimase', "Bienvenue (accueil en boutique)", 1, "Aucune réponse attendue : un signe de tête suffit"),
+    heard('お次の方どうぞ', 'おつぎのかたどうぞ', 'otsugi no kata dōzo', "Personne suivante, s'il vous plaît", 1),
+    heard('少々お待ちください', 'しょうしょうおまちください', 'shōshō omachi kudasai', "Un instant, s'il vous plaît", 1),
+    heard('お待たせしました', 'おまたせしました', 'omatase shimashita', "Désolé de vous avoir fait attendre", 1),
+    heard('かしこまりました', 'かしこまりました', 'kashikomarimashita', "Entendu / bien compris (très poli)", 1),
+    heard('レジ袋はご利用ですか', 'レジぶくろはごりようですか', 'rejibukuro wa goriyō desu ka', "Voulez-vous un sac ?", 1, "Version polie de 袋はいりますか"),
+    heard('お箸はお付けしますか', 'おはしはおつけしますか', 'ohashi wa otsuke shimasu ka', "Je vous mets des baguettes ?", 1),
+    heard('こちら温めますか', 'こちらあたためますか', 'kochira atatamemasu ka', "Je vous réchauffe ceci ?", 1),
+    heard('お支払いはどうなさいますか', 'おしはらいはどうなさいますか', 'oshiharai wa dō nasaimasu ka', "Comment souhaitez-vous payer ?", 1),
+    heard('1,200円になります', 'せんにひゃくえんになります', 'sen nihyaku en ni narimasu', "Cela fait 1 200 yens", 1, "〜になります = « cela fait ~ »"),
+    heard('千円お預かりします', 'せんえんおあずかりします', 'sen en oazukari shimasu', "Je reçois 1 000 yens (en prenant votre argent)", 2),
+    heard('300円のお返しです', 'さんびゃくえんのおかえしです', 'sanbyaku en no okaeshi desu', "Voici 300 yens de monnaie", 2),
+    heard('レシートはご利用ですか', 'レシートはごりようですか', 'reshīto wa goriyō desu ka', "Voulez-vous le ticket de caisse ?", 2),
+    heard('こちらにタッチしてください', 'こちらにタッチしてください', 'kochira ni tatchi shite kudasai', "Touchez ici (écran ou paiement sans contact)", 2),
+    heard('現金のみです', 'げんきんのみです', 'genkin nomi desu', "Espèces uniquement", 1),
+    heard('またお越しくださいませ', 'またおこしくださいませ', 'mata okoshi kudasaimase', "Au plaisir de vous revoir", 3),
+    // Restaurant
+    heard('こちらへどうぞ', 'こちらへどうぞ', 'kochira e dōzo', "Par ici, je vous prie", 1),
+    heard('お好きな席へどうぞ', 'おすきなせきへどうぞ', 'osuki na seki e dōzo', "Installez-vous où vous voulez", 1),
+    heard('ご注文はお決まりですか', 'ごちゅうもんはおきまりですか', 'gochūmon wa okimari desu ka', "Avez-vous choisi ?", 1),
+    heard('お飲み物はいかがですか', 'おのみものはいかがですか', 'onomimono wa ikaga desu ka', "Désirez-vous une boisson ?", 2),
+    heard('以上でよろしいですか', 'いじょうでよろしいですか', 'ijō de yoroshii desu ka', "Ce sera tout ?", 1),
+    heard('店内でお召し上がりですか', 'てんないでおめしあがりですか', 'tennai de omeshiagari desu ka', "C'est pour manger sur place ?", 1),
+    heard('お持ち帰りですか', 'おもちかえりですか', 'omochikaeri desu ka', "C'est à emporter ?", 1),
+    heard('申し訳ございません、売り切れです', 'もうしわけございません、うりきれです', 'mōshiwake gozaimasen, urikire desu', "Je suis désolé, il n'y en a plus", 1),
+    heard('ただいま満席です', 'ただいままんせきです', 'tadaima manseki desu', "C'est complet pour le moment", 2),
+    heard('ラストオーダーです', 'ラストオーダーです', 'rasuto ōdā desu', "Dernière commande", 2),
+    heard('お会計はご一緒でよろしいですか', 'おかいけいはごいっしょでよろしいですか', 'okaikei wa goissho de yoroshii desu ka', "Je vous fais une seule addition ?", 2),
+    // Hôtel et boutique
+    heard('パスポートをお願いします', 'パスポートをおねがいします', 'pasupōto o onegai shimasu', "Votre passeport, s'il vous plaît", 1),
+    heard('お名前をお願いします', 'おなまえをおねがいします', 'onamae o onegai shimasu', "Votre nom, s'il vous plaît", 1),
+    heard('こちらにご記入ください', 'こちらにごきにゅうください', 'kochira ni gokinyū kudasai', "Veuillez remplir ici", 2),
+    heard('何かお探しですか', 'なにかおさがしですか', 'nanika osagashi desu ka', "Vous cherchez quelque chose ?", 1, "Réponse utile : 見ているだけです"),
+    heard('ご試着なさいますか', 'ごしちゃくなさいますか', 'goshichaku nasaimasu ka', "Souhaitez-vous l'essayer ?", 2),
+    heard('ご自宅用ですか', 'ごじたくようですか', 'gojitaku-yō desu ka', "C'est pour vous ?", 2, "Sinon, on vous propose un emballage cadeau"),
+    // Gare et train (annonces)
+    heard('まもなく電車がまいります', 'まもなくでんしゃがまいります', 'mamonaku densha ga mairimasu', "Le train va bientôt arriver", 1),
+    heard('黄色い線の内側までお下がりください', 'きいろいせんのうちがわまでおさがりください', 'kiiroi sen no uchigawa made osagari kudasai', "Reculez derrière la ligne jaune", 2),
+    heard('ドアが閉まります。ご注意ください', 'ドアがしまります。ごちゅういください', 'doa ga shimarimasu. gochūi kudasai', "Les portes se ferment, attention", 1),
+    heard('次は京都です', 'つぎはきょうとです', 'tsugi wa kyōto desu', "Prochain arrêt : Kyoto", 1),
+    heard('お出口は右側です', 'おでぐちはみぎがわです', 'odeguchi wa migigawa desu', "La sortie est à droite", 1),
+  ],
+  questions: [
+    heard('どちらからいらっしゃいましたか', 'どちらからいらっしゃいましたか', 'dochira kara irasshaimashita ka', "D'où venez-vous ? (très poli)", 1, "Réponse : フランスから来ました"),
+    ['どこから来ましたか', 'どこからきましたか', 'doko kara kimashita ka', "D'où venez-vous ?", 'phrase', 1],
+    heard('日本は初めてですか', 'にほんははじめてですか', 'nihon wa hajimete desu ka', "C'est votre première fois au Japon ?", 1),
+    ['はい、初めてです', 'はい、はじめてです', 'hai, hajimete desu', "Oui, c'est la première fois", 'phrase', 1],
+    ['二回目です', 'にかいめです', 'nikaime desu', "C'est la deuxième fois", 'phrase', 2],
+    heard('いつまで日本にいますか', 'いつまでにほんにいますか', 'itsu made nihon ni imasu ka', "Jusqu'à quand restez-vous au Japon ?", 1),
+    ['来週の金曜日までいます', 'らいしゅうのきんようびまでいます', 'raishū no kin\'yōbi made imasu', "Je reste jusqu'à vendredi prochain", 'phrase', 2],
+    ['二週間います', 'にしゅうかんいます', 'nishūkan imasu', "Je reste deux semaines", 'phrase', 1],
+    heard('日本語お上手ですね', 'にほんごおじょうずですね', 'nihongo ojōzu desu ne', "Vous parlez bien japonais !", 1, "Compliment rituel, dès les premiers mots"),
+    ['いいえ、まだまだです', 'いいえ、まだまだです', 'iie, madamada desu', "Non, j'ai encore beaucoup à apprendre", 'phrase', 1, "La réponse modeste attendue à 日本語お上手ですね"],
+    ['日本語を二年間勉強しています', 'にほんごをにねんかんべんきょうしています', 'nihongo o ninenkan benkyō shite imasu', "J'étudie le japonais depuis deux ans", 'phrase', 1],
+    heard('旅行ですか、お仕事ですか', 'りょこうですか、おしごとですか', 'ryokō desu ka, oshigoto desu ka', "Vous êtes là en voyage ou pour le travail ?", 1),
+    ['旅行で来ました', 'りょこうできました', 'ryokō de kimashita', "Je suis venu en voyage", 'phrase', 1],
+    ['どこに行きましたか', 'どこにいきましたか', 'doko ni ikimashita ka', "Où êtes-vous allé ?", 'phrase', 2],
+    ['東京と京都に行きました', 'とうきょうときょうとにいきました', 'tōkyō to kyōto ni ikimashita', "Je suis allé à Tokyo et à Kyoto", 'phrase', 2],
+    heard('日本はどうですか', 'にほんはどうですか', 'nihon wa dō desu ka', "Comment trouvez-vous le Japon ?", 1),
+    ['とても楽しいです', 'とてもたのしいです', 'totemo tanoshii desu', "Je m'amuse beaucoup / c'est très agréable", 'phrase', 1],
+    heard('日本の食べ物は大丈夫ですか', 'にほんのたべものはだいじょうぶですか', 'nihon no tabemono wa daijōbu desu ka', "La cuisine japonaise vous convient ?", 2),
+    ['何でも食べられます', 'なんでもたべられます', 'nandemo taberaremasu', "Je peux manger de tout", 'phrase', 2],
+    heard('納豆は食べられますか', 'なっとうはたべられますか', 'nattō wa taberaremasu ka', "Vous arrivez à manger du nattō ?", 3, "Question classique posée aux étrangers"),
+    ['お仕事は何ですか', 'おしごとはなんですか', 'oshigoto wa nan desu ka', "Quel est votre travail ?", 'phrase', 2],
+    ['趣味は何ですか', 'しゅみはなんですか', 'shumi wa nan desu ka', "Quels sont vos loisirs ?", 'phrase', 2],
+    ['アニメが好きです', 'アニメがすきです', 'anime ga suki desu', "J'aime les anime", 'phrase', 2],
+    ['バレーボールをしています', 'バレーボールをしています', 'barēbōru o shite imasu', "Je fais du volley-ball", 'phrase', 3],
+    ['おすすめの場所はありますか', 'おすすめのばしょはありますか', 'osusume no basho wa arimasu ka', "Avez-vous un endroit à recommander ?", 'phrase', 2],
+    ['一緒に写真を撮りませんか', 'いっしょにしゃしんをとりませんか', 'issho ni shashin o torimasen ka', "On prend une photo ensemble ?", 'phrase', 3],
+  ],
 };
 
 export const BUILTIN_VOCAB: VocabEntry[] = Object.entries(DATA).flatMap(([theme, rows]) =>
-  rows.map(([jp, kana, romaji, fr, type, priority, note], i) => ({
+  rows.map(([jp, kana, romaji, fr, type, priority, note, heard], i) => ({
     id: `${theme}-${i}`,
     jp,
     kana,
@@ -272,5 +350,6 @@ export const BUILTIN_VOCAB: VocabEntry[] = Object.entries(DATA).flatMap(([theme,
     type,
     priority,
     note,
+    ...(heard ? { heard: true } : {}),
   })),
 );
