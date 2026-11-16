@@ -1,6 +1,6 @@
 // Tests de l'import des phrases de fin de scène : `npm run test:import`
 import assert from 'node:assert/strict';
-import { buildAppPrompt, SCENARIOS } from './claude.prompts';
+import { apiSystemPrompt, buildAppPrompt, pickTwist, SCENARIOS } from './claude.prompts';
 import { parseCardsFromText } from './import';
 
 let pass = 0;
@@ -66,6 +66,32 @@ test('séparateur pleine chasse ｜ accepté', () => {
 
 test('ligne sans traduction ignorée plutôt que décalée', () => {
   assert.equal(parseCardsFromText('乾杯 | かんぱい | kanpai').length, 0);
+});
+
+test('imprévu : aucun au niveau A1, un par scène ensuite, et il figure dans les deux prompts', () => {
+  for (const s of SCENARIOS) {
+    assert.ok(s.twists.length >= 2, s.id);
+    assert.equal(pickTwist(s, 'A1'), null);
+    s.twists.forEach((expected, i) => {
+      const twist = pickTwist(s, 'A2', () => i / s.twists.length);
+      assert.equal(twist, expected);
+      assert.ok(buildAppPrompt(s, 'A2', twist).includes(expected));
+      assert.ok(apiSystemPrompt(s, 'B1', twist).includes(expected));
+      assert.ok(buildAppPrompt(s, 'A2', twist).length < 14_000);
+    });
+    assert.ok(!buildAppPrompt(s, 'A1', null).includes('Imprévu'));
+  }
+});
+
+test('le bilan demandé en fin de scène ne pollue pas l\'import des phrases', () => {
+  const reply = `Objectif atteint : tu as payé et refusé le sac.
+Bien dit : 袋はいりません.
+À retravailler : カードで払えますか (tu as dit カードを払えますか).
+
+袋はいりません | ふくろはいりません | fukuro wa irimasen | Je n'ai pas besoin de sac
+カードで払えますか | カードではらえますか | kādo de haraemasu ka | Puis-je payer par carte ?`;
+  assert.equal(parseCardsFromText(reply).length, 2);
+  for (const p of [buildAppPrompt(SCENARIOS[0]), apiSystemPrompt(SCENARIOS[0])]) assert.ok(p.includes('bilan'));
 });
 
 console.log(`\n${pass} tests OK`);
