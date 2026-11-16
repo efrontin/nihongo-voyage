@@ -3,14 +3,14 @@ import { ChatMessage } from './models';
 import { StoreService } from './store.service';
 import { Scenario, TutorReply, apiSystemPrompt } from './claude.prompts';
 
-export { SCENARIOS, buildAppPrompt } from './claude.prompts';
+export { SCENARIOS, buildAppPrompt, pickTwist } from './claude.prompts';
 export type { Scenario, TutorReply } from './claude.prompts';
 
 @Injectable({ providedIn: 'root' })
 export class ClaudeService {
   private readonly store = inject(StoreService);
 
-  async reply(scenario: Scenario, history: ChatMessage[]): Promise<TutorReply> {
+  async reply(scenario: Scenario, history: ChatMessage[], twist: string | null = null): Promise<TutorReply> {
     const { apiKey, model, level } = this.store.settings();
     if (!apiKey) throw new Error('Ajoute ta clé API Anthropic dans les réglages.');
 
@@ -27,7 +27,7 @@ export class ClaudeService {
         // la clé reste sur ton appareil ; cet en-tête autorise l'appel direct depuis le navigateur
         'anthropic-dangerous-direct-browser-access': 'true',
       },
-      body: JSON.stringify({ model, max_tokens: 700, system: apiSystemPrompt(scenario, level), messages }),
+      body: JSON.stringify({ model, max_tokens: 700, system: apiSystemPrompt(scenario, level, twist), messages }),
     });
 
     if (!res.ok) {
@@ -50,9 +50,10 @@ export function parseReply(text: string): TutorReply {
       romaji: obj.romaji ?? '',
       fr: obj.fr ?? '',
       correction: obj.correction ?? null,
+      bilan: obj.bilan ?? null,
       suggestions: Array.isArray(obj.suggestions) ? obj.suggestions : [],
     };
   } catch {
-    return { jp: text, kana: '', romaji: '', fr: '', correction: null, suggestions: [] };
+    return { jp: text, kana: '', romaji: '', fr: '', correction: null, bilan: null, suggestions: [] };
   }
 }

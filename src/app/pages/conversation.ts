@@ -2,7 +2,7 @@ import { Component, ElementRef, computed, inject, signal, viewChild, ChangeDetec
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ClaudeService, SCENARIOS, Scenario, TutorReply, buildAppPrompt } from '../core/claude.service';
+import { ClaudeService, SCENARIOS, Scenario, TutorReply, buildAppPrompt, pickTwist } from '../core/claude.service';
 import { parseCardsFromText } from '../core/import';
 import { ChatMessage } from '../core/models';
 import { SpeechService } from '../core/speech.service';
@@ -82,6 +82,7 @@ const SpeechRecognitionCtor: (new () => Recognition) | undefined =
         <button class="icon-btn" (click)="stop()" aria-label="Retour">←</button>
         <strong>{{ scenario()!.icon }} {{ scenario()!.label }}</strong>
         <span class="spacer"></span>
+        <button class="small" (click)="finish()" [disabled]="loading() || ended() || turns().length < 2">Terminer · bilan</button>
         <button class="small" (click)="start(scenario()!)">Recommencer</button>
       </div>
 
@@ -97,6 +98,7 @@ const SpeechRecognitionCtor: (new () => Recognition) | undefined =
               @if (r.kana && r.kana !== r.jp) { <p class="jp kana">{{ r.kana }}</p> }
               @if (store.settings().showRomaji && r.romaji) { <p class="romaji">{{ r.romaji }}</p> }
               @if (t.showFr) { <p class="fr">{{ r.fr }}</p> }
+              @if (r.bilan) { <p class="bilan small">📋 {{ r.bilan }}</p> }
               <div class="row acts">
                 <button class="icon-btn" (click)="speech.speak(r.kana || r.jp)" aria-label="Écouter">🔊</button>
                 <button class="small" (click)="toggleFr(t)">{{ t.showFr ? 'Masquer' : 'Traduire' }}</button>
@@ -170,6 +172,7 @@ const SpeechRecognitionCtor: (new () => Recognition) | undefined =
     .kana { color: var(--ink-2); font-size: 0.9rem; }
     .romaji { color: var(--ink-2); font-style: italic; font-size: 0.85rem; }
     .fr { margin-top: 6px !important; font-weight: 600; }
+    .bilan { background: #e6eedc; border-radius: 8px; padding: 8px 10px; margin-top: 8px !important; white-space: pre-line; }
     .corr { background: #fbf0d9; border-radius: 8px; padding: 6px 8px; margin-bottom: 8px !important; }
     .acts { margin-top: 8px; gap: 6px; }
     .acts button { padding: 4px 10px; font-size: 0.8rem; }
@@ -198,13 +201,15 @@ export class ConversationPage {
   protected readonly canListen = !!SpeechRecognitionCtor;
   protected readonly input = signal('');
 
+  /** Imprévu tiré au sort pour la scène en cours (jamais affiché : c'est une surprise). */
+  private readonly twist = signal<string | null>(null);
   protected readonly mode = signal<'app' | 'api'>('app');
   protected readonly copied = signal<boolean | null>(null);
   protected readonly pasted = signal('');
   protected readonly imported = signal<number | null>(null);
   protected readonly appPrompt = computed(() => {
     const s = this.scenario();
-    return s ? buildAppPrompt(s, this.store.settings().level) : '';
+    return s ? buildAppPrompt(s, this.store.settings().level, this.twist()) : '';
   });
   protected readonly preview = computed(() => parseCardsFromText(this.pasted()));
 
@@ -212,6 +217,7 @@ export class ConversationPage {
     this.mode.set(this.store.settings().apiKey ? 'api' : 'app');
     this.copied.set(null);
     this.imported.set(null);
+    this.twist.set(pickTwist(s, this.store.settings().level));
     this.scenario.set(s);
     if (this.mode() === 'app') return;
     this.turns.set([]);
@@ -224,6 +230,16 @@ export class ConversationPage {
     this.turns.set([]);
     this.imported.set(null);
     this.copied.set(null);
+  }
+
+  /** La scène est finie dès que Claude a rendu son bilan. */
+  protected readonly ended = computed(() => this.turns().some((t) => !!t.reply?.bilan));
+
+  /** Clôt la scène : Claude donne sa dernière réplique et le bilan. */
+  protected finish(): void {
+    if (this.loading() || this.ended()) return;
+    this.turns.update((t) => [...t, { role: 'user', text: 'fin' }]);
+    this.ask();
   }
 
   protected send(): void {
@@ -242,7 +258,7 @@ export class ConversationPage {
     this.lastSuggestions.set([]);
     const history: ChatMessage[] = this.turns().map((t) => ({ role: t.role, content: t.text }));
     try {
-      const reply = await this.claude.reply(s, history);
+      const reply = await this.claude.reply(s, history, this.twist());
       this.turns.update((t) => [...t, { role: 'assistant', text: JSON.stringify(reply), reply }]);
       this.lastSuggestions.set(reply.suggestions);
       this.speech.speak(reply.kana || reply.jp);
