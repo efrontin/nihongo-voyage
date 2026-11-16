@@ -25,7 +25,7 @@ import { THEMES } from '../data/vocab';
           <span class="chip">{{ c.dir === 'prod' ? '🗣️ Dire' : c.listen ? '👂 Écouter' : '👁 Lire' }}</span>
           @if (c.isNew) { <span class="chip new">Nouveau</span> }
           <span class="spacer"></span>
-          @if (c.dir === 'rec' || revealed()) {
+          @if ((c.dir === 'rec' && c.entry.type !== 'kanji') || revealed()) {
             <button class="icon-btn" (click)="speak()" aria-label="Écouter">🔊</button>
           }
         </div>
@@ -201,12 +201,16 @@ export class ReviewPage implements OnInit {
 
   protected speak(): void {
     const c = this.current();
+    // sur un kanji de panneau, l'audio donnerait la réponse avant qu'on ait lu
+    if (c?.entry.type === 'kanji' && !this.revealed()) return;
     // les phrases dites par l'interlocuteur s'écoutent à vitesse réelle
     if (c) this.speech.speak(c.entry.kana || c.entry.jp, c.entry.heard ? 1 : undefined);
   }
 
   private autoSpeak(): void {
-    if (this.current()?.dir === 'rec') setTimeout(() => this.speak(), 150);
+    // pas d'audio d'office sur les kanji des panneaux : c'est la lecture qu'on teste
+    const c = this.current();
+    if (c?.dir === 'rec' && c.entry.type !== 'kanji') setTimeout(() => this.speak(), 150);
   }
 
   onKey(e: KeyboardEvent): void {
